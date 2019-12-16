@@ -7,12 +7,13 @@ from os.path import join
 import numba
 from numba import jit
 import shutil
+import sys
 
 
-def imread(path,scale=0.5):
+def imread(path,rescale=0.5):
 	#cvt RGB2GRAY & downsample
 	img = cv2.imread(path,0)
-	img = cv2.resize(img,(0,0),fx=scale,fy=scale,interpolation=cv2.INTER_NEAREST)
+	img = cv2.resize(img,(0,0),fx=rescale,fy=rescale,interpolation=cv2.INTER_NEAREST)
 	return img
 
 #kernel fo Sobel
@@ -70,7 +71,7 @@ def dilate(img,d=7):
 	res = cv2.dilate(img, kernel)
 	return res
 
-def main(nameList,sensitivity = 30):
+def main(nameList,sensitivity = 30,rescale=0.5):
 	#nameList: List of images stored in order of shooting
 	if os.path.exists('MeterosOutput'):
 		shutil.rmtree('MeterosOutput')
@@ -80,13 +81,13 @@ def main(nameList,sensitivity = 30):
 		if 'JPG' not in name and 'jpg' not in name:
 			continue
 		if prev is None:
-			prev = imread(join(head,name))
+			prev = imread(join(head,name),rescale)
 			continue
 		
 		prev_grad = grad(prev)
 		prev_mask = dilate(prev_grad, 7)
 
-		now = imread(join(head,name))
+		now = imread(join(head,name),rescale)
 		now_grad = grad(now)
 		diff = cv2.subtract(now_grad,prev_mask)	
 		thresh = findThresh(diff)
@@ -106,9 +107,18 @@ def main(nameList,sensitivity = 30):
 
 if __name__  == '__main__':
 	#Config
-	head = '/Users/heyue/Downloads/2018双子流星雨数据集'
+	#head = '/Users/heyue/Downloads/2018双子流星雨数据集'
 	sensitivity = 30	
-
+	rescale = 0.5
+	if len(sys.argv)<=1:
+		print("Please input the path of folder")
+		sys.exit() 
+	head = sys.argv[1]
+	if len(sys.argv)>2:
+		sensitivity = int(sys.argv[2])
+	if len(sys.argv)>3:
+		rescale = float(sys.argv[3])
+		
 	nameList = listdir(head)
 	nameList.sort()
-	main(nameList,sensitivity)
+	main(nameList,sensitivity,rescale)
