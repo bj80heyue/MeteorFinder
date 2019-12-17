@@ -77,16 +77,16 @@ def main(nameList,sensitivity = 30,rescale=0.5):
 		shutil.rmtree('MeterosOutput')
 	os.makedirs('MeterosOutput')
 	prev,now = None,None
+	prev_grad,now_grad = None,None
 	for name in tqdm(nameList):
 		if 'JPG' not in name and 'jpg' not in name:
 			continue
 		if prev is None:
 			prev = imread(join(head,name),rescale)
+			prev_grad = grad(prev)
 			continue
 		
-		prev_grad = grad(prev)
 		prev_mask = dilate(prev_grad, 7)
-
 		now = imread(join(head,name),rescale)
 		now_grad = grad(now)
 		diff = cv2.subtract(now_grad,prev_mask)	
@@ -94,6 +94,8 @@ def main(nameList,sensitivity = 30,rescale=0.5):
 		mask = cv2.threshold(diff,thresh,255,0)[1]
 		lines = cv2.HoughLinesP(mask, 1, np.pi/180,sensitivity,minLineLength=30,maxLineGap=50)
 		prev = now.copy()
+		prev_grad = now_grad.copy()
+		#visualize
 		canvas = now.copy()
 		if lines is not None:
 			lines = lines.squeeze(1).tolist()
